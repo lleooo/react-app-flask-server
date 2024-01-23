@@ -1,8 +1,10 @@
 import os
 
 from flask import Flask
+from datetime import timedelta
 
 from app.api import api_bp
+from flask_jwt_extended import JWTManager
 
 
 def create_app(test_config=None):
@@ -10,6 +12,9 @@ def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY="dev",
+        JWT_SECRET_KEY = "dev",
+        JWT_TOKEN_LOCATION = "cookies",
+        JWT_ACCESS_TOKEN_EXPIRES = timedelta(seconds = 5)
         # DATABASE=os.path.join(app.instance_path, "flaskr.sqlite"),
     )
 
@@ -26,6 +31,7 @@ def create_app(test_config=None):
     except OSError:
         pass
 
+    jwt =JWTManager(app)
     app.register_blueprint(api_bp, url_prefix="/api")
 
     return app

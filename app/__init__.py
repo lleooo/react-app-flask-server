@@ -4,6 +4,7 @@ from flask import Flask
 from datetime import timedelta
 
 from app.api import api_bp
+from app.database import mongo_client
 from flask_jwt_extended import JWTManager
 
 
@@ -14,7 +15,9 @@ def create_app(test_config=None):
         SECRET_KEY="dev",
         JWT_SECRET_KEY = "dev",
         JWT_TOKEN_LOCATION = "cookies",
-        JWT_ACCESS_TOKEN_EXPIRES = timedelta(seconds = 5)
+        JWT_ACCESS_TOKEN_EXPIRES = timedelta(seconds= 5),
+        JWT_REFRESH_TOKEN_EXPIRES = timedelta(days = 30),
+        MONGO_URI = 'mongodb+srv://test:test@cluster0.iu7brvi.mongodb.net/?retryWrites=true&w=majority'
         # DATABASE=os.path.join(app.instance_path, "flaskr.sqlite"),
     )
 
@@ -32,6 +35,7 @@ def create_app(test_config=None):
         pass
 
     jwt =JWTManager(app)
+    mongo_client.init_app(app)
     app.register_blueprint(api_bp, url_prefix="/api")
 
     return app

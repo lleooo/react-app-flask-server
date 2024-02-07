@@ -1,21 +1,61 @@
+from functools import wraps
+
 from flask import request,jsonify,make_response
 from app.api import api_bp as api
-from flask_jwt_extended import create_access_token,unset_jwt_cookies,jwt_required,get_jwt_identity,set_access_cookies
+from app.database import mongo_client
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_refresh_token
+from flask_jwt_extended import unset_jwt_cookies
+from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import set_access_cookies
+from flask_jwt_extended import set_refresh_cookies
+from flask_jwt_extended import verify_jwt_in_request
+from flask_jwt_extended import get_jwt_identity
+from jwt.exceptions import ExpiredSignatureError
+from jwt import decode
+
+
+
+def check(fn):
+    @wraps(fn)
+    def decorator(*args, **kwargs):
+        try:    
+            verify_jwt_in_request()
+        except ExpiredSignatureError as e :
+            return jsonify({'msg':'access expired'}),401
+        except Exception as e:
+            print(e)
+            return jsonify({'msg': 'Internal server error'}), 500
+
+        return fn(*args, **kwargs)
+    return decorator
 
 
 @api.route('/login', methods=["POST"])
 def login():
+    col = mongo_client.client['db_create_by_leo']['collection_create_by_leo']
+
     username = request.json.get('username')
     password = request.json.get('password')
 
-    if username != 'test' or password!='test' :
+    dbquery = {
+        "username": username,
+        'password': password
+    }
+
+    mydoc = col.find(dbquery)
+
+    if len(list(mydoc)) == 0:
         return  {"msg": "Wrong email or password"}, 401
     
     response = jsonify({"msg": "login successful"})
     
     access_token = create_access_token(identity=username)
+    refresh_token = create_refresh_token(identity=username)
 
     set_access_cookies(response, access_token)
+    set_refresh_cookies(response, refresh_token)
 
     return response
 
@@ -26,14 +66,24 @@ def logout():
     return response
 
 @api.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
 def refresh():
+    # Create the new access token
     current_user = get_jwt_identity()
-    ret = {
-        'access_token': create_access_token(identity=current_user)
-    }
-    return jsonify(ret), 200
+    access_token = create_access_token(identity=current_user)
+
+    # Set the JWT access cookie in the response
+    resp = jsonify({'refresh': True})
+    set_access_cookies(resp, access_token)
+    return resp, 200
 
 @api.route('/getlove')
-@jwt_required()
+@check
 def getlove():
-    return '123'
+    res = ['movie1','movie2','movie3','movie4','movie5']
+    return jsonify({'msg':'success','favorite':res}), 200
+
+@api.route('/addFavorite',methods=['POST'])
+@check
+def get_favorite():
+    return jsonify({'msg':'success'}), 200

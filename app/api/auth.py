@@ -1,4 +1,4 @@
-from functools import wraps
+from functools import wraps  
 
 from flask import request,jsonify,make_response
 from app.api import api_bp as api
@@ -25,18 +25,56 @@ def check(fn):
         except ExpiredSignatureError as e :
             return jsonify({'msg':'access expired'}),401
         except Exception as e:
-            print(e)
             return jsonify({'msg': 'Internal server error'}), 500
 
         return fn(*args, **kwargs)
     return decorator
 
 
+@api.route('/verify-token',methods=["GET"])
+@check
+def verify():
+    return jsonify({'msg': 'Token is valid'}),200
+
+
 @api.route('/login', methods=["POST"])
 def login():
     col = mongo_client.client['db_create_by_leo']['collection_create_by_leo']
 
+    email = request.json.get('email')
+    password = request.json.get('password')
+
+    dbquery = {
+        "email": email,
+        'password': password
+    }
+
+    mydoc = list(col.find(dbquery))
+
+    if len(mydoc) == 0:
+        return  {"msg": "Wrong email or password"}, 401
+
+    response = jsonify({"msg": "successful","data":{
+        'id':str(mydoc[0]['_id']),
+        'username':mydoc[0]['username'],
+        'email':mydoc[0]['email'],
+        'favorite':mydoc[0]['favorite']
+    }})
+    
+    access_token = create_access_token(identity=email)
+    refresh_token = create_refresh_token(identity=email)
+
+    set_access_cookies(response, access_token)
+    set_refresh_cookies(response, refresh_token)
+
+    return response
+
+@api.route('/signup', methods=["POST"])
+def signup():
+    col = mongo_client.client['db_create_by_leo']['collection_create_by_leo']
+
     username = request.json.get('username')
+    email = request.json.get('email')
     password = request.json.get('password')
 
     dbquery = {
@@ -46,18 +84,17 @@ def login():
 
     mydoc = col.find(dbquery)
 
-    if len(list(mydoc)) == 0:
-        return  {"msg": "Wrong email or password"}, 401
+    if len(list(mydoc)) != 0:
+        return jsonify({'msg': 'user exist'}), 409
     
-    response = jsonify({"msg": "login successful"})
-    
-    access_token = create_access_token(identity=username)
-    refresh_token = create_refresh_token(identity=username)
+    col.insert_one({
+        "username": username,
+        "email":email,
+        "password": password,
+        'favorite':[]
+    })
 
-    set_access_cookies(response, access_token)
-    set_refresh_cookies(response, refresh_token)
-
-    return response
+    return jsonify({'message': 'success'}), 201
 
 @api.route('/logout', methods=["POST"])
 def logout():
@@ -86,4 +123,28 @@ def getlove():
 @api.route('/addFavorite',methods=['POST'])
 @check
 def get_favorite():
-    return jsonify({'msg':'success'}), 200
+    col = mongo_client.client['db_create_by_leo']['collection_create_by_leo']
+
+    username = request.json.get('username')
+    movieID = request.json.get('movieID')
+
+    existing_favorite = col.find_one({"username": username, "favorite": {"$in": [movieID]}})
+
+    if existing_favorite:
+        return jsonify({"message": "Favorite already exists"}), 400
+
+    col.update_one(
+        {"username": username},
+        {"$push": {"favorite": movieID}}
+    )
+
+    mydoc = col.find({"username": username})
+
+    response = jsonify({"msg": "successful","data":{
+        'id':str(mydoc[0]['_id']),
+        'username':mydoc[0]['username'],
+        'email':mydoc[0]['email'],
+        'favorite':mydoc[0]['favorite']
+    }})
+
+    return response, 200

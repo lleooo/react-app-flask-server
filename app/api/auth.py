@@ -1,6 +1,6 @@
-from functools import wraps  
+from functools import wraps
 
-from flask import request,jsonify,make_response
+from flask import request, jsonify, make_response
 from app.api import api_bp as api
 from app.database import mongo_client
 from flask_jwt_extended import create_access_token
@@ -16,14 +16,13 @@ from jwt.exceptions import ExpiredSignatureError
 from jwt import decode
 
 
-
 def check(fn):
     @wraps(fn)
     def decorator(*args, **kwargs):
-        try:    
+        try:
             verify_jwt_in_request()
-        except ExpiredSignatureError as e :
-            return jsonify({'msg':'access expired'}),401
+        except ExpiredSignatureError as e:
+            return jsonify({'msg': 'access expired'}), 401
         except Exception as e:
             return jsonify({'msg': 'Internal server error'}), 500
 
@@ -31,10 +30,10 @@ def check(fn):
     return decorator
 
 
-@api.route('/verify-token',methods=["GET"])
+@api.route('/verify-token', methods=["GET"])
 @check
 def verify():
-    return jsonify({'msg': 'Token is valid'}),200
+    return jsonify({'msg': 'Token is valid'}), 200
 
 
 @api.route('/login', methods=["POST"])
@@ -52,15 +51,15 @@ def login():
     mydoc = list(col.find(dbquery))
 
     if len(mydoc) == 0:
-        return  {"msg": "Wrong email or password"}, 401
+        return {"msg": "Wrong email or password"}, 401
 
-    response = jsonify({"msg": "successful","data":{
-        'id':str(mydoc[0]['_id']),
-        'username':mydoc[0]['username'],
-        'email':mydoc[0]['email'],
-        'favorite':mydoc[0]['favorite']
+    response = jsonify({"msg": "successful", "data": {
+        'id': str(mydoc[0]['_id']),
+        'username': mydoc[0]['username'],
+        'email': mydoc[0]['email'],
+        'favorite': mydoc[0]['favorite']
     }})
-    
+
     access_token = create_access_token(identity=email)
     refresh_token = create_refresh_token(identity=email)
 
@@ -68,6 +67,7 @@ def login():
     set_refresh_cookies(response, refresh_token)
 
     return response
+
 
 @api.route('/signup', methods=["POST"])
 def signup():
@@ -86,21 +86,23 @@ def signup():
 
     if len(list(mydoc)) != 0:
         return jsonify({'msg': 'user exist'}), 409
-    
+
     col.insert_one({
         "username": username,
-        "email":email,
+        "email": email,
         "password": password,
-        'favorite':[]
+        'favorite': []
     })
 
     return jsonify({'message': 'success'}), 201
+
 
 @api.route('/logout', methods=["POST"])
 def logout():
     response = jsonify({"msg": "logout successful"})
     unset_jwt_cookies(response)
     return response
+
 
 @api.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
@@ -114,13 +116,15 @@ def refresh():
     set_access_cookies(resp, access_token)
     return resp, 200
 
+
 @api.route('/getlove')
 @check
 def getlove():
-    res = ['movie1','movie2','movie3','movie4','movie5']
-    return jsonify({'msg':'success','favorite':res}), 200
+    res = ['movie1', 'movie2', 'movie3', 'movie4', 'movie5']
+    return jsonify({'msg': 'success', 'favorite': res}), 200
 
-@api.route('/addFavorite',methods=['POST'])
+
+@api.route('/addFavorite', methods=['POST'])
 @check
 def get_favorite():
     col = mongo_client.client['db_create_by_leo']['collection_create_by_leo']
@@ -140,11 +144,36 @@ def get_favorite():
 
     mydoc = col.find({"username": username})
 
-    response = jsonify({"msg": "successful","data":{
-        'id':str(mydoc[0]['_id']),
-        'username':mydoc[0]['username'],
-        'email':mydoc[0]['email'],
-        'favorite':mydoc[0]['favorite']
+    response = jsonify({"msg": "successful", "data": {
+        'id': str(mydoc[0]['_id']),
+        'username': mydoc[0]['username'],
+        'email': mydoc[0]['email'],
+        'favorite': mydoc[0]['favorite']
     }})
 
     return response, 200
+
+
+@api.route('/removeFavorite', methods=['DELETE'])
+@check
+def rm_favorite():
+    try:
+        col = mongo_client.client['db_create_by_leo']['collection_create_by_leo']
+
+        username = request.json.get('username')
+        movieID = request.json.get('movieID')
+
+        result = col.update_one(
+            {"username": username},
+            {"$pull": {"favorite": movieID}}
+        )
+
+        favoriteMovies = col.find_one({"username": username})['favorite']
+
+        if result.modified_count == 1:
+            return jsonify({"msg": "success", "data": favoriteMovies}), 200
+        else:
+            return jsonify({"msg": "error"}), 404
+
+    except Exception as e:
+        return jsonify({"msg": str(e)}), 500

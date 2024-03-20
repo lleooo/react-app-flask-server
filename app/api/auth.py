@@ -24,6 +24,7 @@ def check(fn):
         except ExpiredSignatureError as e:
             return jsonify({'msg': 'access expired'}), 401
         except Exception as e:
+            print(e)
             return jsonify({'msg': 'Internal server error'}), 500
 
         return fn(*args, **kwargs)
@@ -117,39 +118,27 @@ def refresh():
     return resp, 200
 
 
-@api.route('/getlove')
-@check
-def getlove():
-    res = ['movie1', 'movie2', 'movie3', 'movie4', 'movie5']
-    return jsonify({'msg': 'success', 'favorite': res}), 200
-
-
 @api.route('/addFavorite', methods=['POST'])
 @check
 def get_favorite():
     col = mongo_client.client['db_create_by_leo']['collection_create_by_leo']
 
-    username = request.json.get('username')
+    current_user_email = get_jwt_identity()
     movieID = request.json.get('movieID')
 
-    existing_favorite = col.find_one({"username": username, "favorite": {"$in": [movieID]}})
+    existing_favorite = col.find_one({"email": current_user_email, "favorite": {"$in": [movieID]}})
 
     if existing_favorite:
         return jsonify({"message": "Favorite already exists"}), 400
 
     col.update_one(
-        {"username": username},
+        {"email": current_user_email},
         {"$push": {"favorite": movieID}}
     )
 
-    mydoc = col.find({"username": username})
+    favoriteMovies = col.find_one({"email": current_user_email})['favorite']
 
-    response = jsonify({"msg": "successful", "data": {
-        'id': str(mydoc[0]['_id']),
-        'username': mydoc[0]['username'],
-        'email': mydoc[0]['email'],
-        'favorite': mydoc[0]['favorite']
-    }})
+    response = jsonify({"msg": "successful", "data": favoriteMovies})
 
     return response, 200
 
@@ -160,16 +149,15 @@ def rm_favorite():
     try:
         col = mongo_client.client['db_create_by_leo']['collection_create_by_leo']
 
-        username = request.json.get('username')
         movieID = request.json.get('movieID')
+        current_user_email = get_jwt_identity()
 
         result = col.update_one(
-            {"username": username},
+            {"email": current_user_email},
             {"$pull": {"favorite": movieID}}
         )
 
-        favoriteMovies = col.find_one({"username": username})['favorite']
-
+        favoriteMovies = col.find_one({"email": current_user_email})['favorite']
         if result.modified_count == 1:
             return jsonify({"msg": "success", "data": favoriteMovies}), 200
         else:

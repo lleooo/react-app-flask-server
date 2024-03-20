@@ -13,11 +13,11 @@ def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY="dev",
-        JWT_SECRET_KEY = "dev",
-        JWT_TOKEN_LOCATION = "cookies",
-        JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=60),
-        JWT_REFRESH_TOKEN_EXPIRES = timedelta(days = 30),
-        MONGO_URI = 'mongodb+srv://test:test@cluster0.iu7brvi.mongodb.net/?retryWrites=true&w=majority'
+        JWT_SECRET_KEY="dev",
+        JWT_TOKEN_LOCATION="cookies",
+        JWT_ACCESS_TOKEN_EXPIRES=timedelta(minutes=60),
+        JWT_REFRESH_TOKEN_EXPIRES=timedelta(days=30),
+        MONGO_URI='mongodb+srv://test:test@cluster0.iu7brvi.mongodb.net/?retryWrites=true&w=majority'
         # DATABASE=os.path.join(app.instance_path, "flaskr.sqlite"),
     )
 
@@ -34,7 +34,7 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    jwt =JWTManager(app)
+    jwt = JWTManager(app)
     mongo_client.init_app(app)
     app.register_blueprint(api_bp, url_prefix="/api")
 

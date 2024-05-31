@@ -70,7 +70,7 @@ def login():
     set_access_cookies(response, access_token)
     set_refresh_cookies(response, refresh_token)
 
-    return response
+    return response, 200
 
 
 @api.route("/signup", methods=["POST"])
@@ -92,7 +92,7 @@ def signup():
         {"username": username, "email": email, "password": password, "favorite": []}
     )
 
-    return jsonify({"message": "success"}), 201
+    return jsonify({"msg": "success"}), 201
 
 
 @api.route("/logout", methods=["POST"])

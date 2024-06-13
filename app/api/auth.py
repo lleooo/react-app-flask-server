@@ -200,8 +200,9 @@ def rm_favorite():
         col = mongo_client.client["db_create_by_leo"]["collection_create_by_leo"]
         print(col)
         movieID = request.json.get("movieID")
+        print(movieID)
         current_user_email = get_jwt_identity()
-
+        print(current_user_email)
         result = col.update_one(
             {"email": current_user_email}, {"$pull": {"favorite": movieID}}
         )

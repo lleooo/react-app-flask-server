@@ -198,14 +198,14 @@ def get_favorite():
 def rm_favorite():
     try:
         col = mongo_client.client["db_create_by_leo"]["collection_create_by_leo"]
-
+        print(col)
         movieID = request.json.get("movieID")
         current_user_email = get_jwt_identity()
 
         result = col.update_one(
             {"email": current_user_email}, {"$pull": {"favorite": movieID}}
         )
-
+        print(result)
         favoriteMovies = col.find_one({"email": current_user_email})["favorite"]
         if result.modified_count == 1:
             return jsonify({"msg": "success", "data": favoriteMovies}), 200

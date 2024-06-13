@@ -6,6 +6,7 @@ from datetime import timedelta
 from app.api import api_bp
 from app.database import mongo_client
 from flask_jwt_extended import JWTManager
+from flask_cors import CORS
 
 
 def create_app(test_config=None):
@@ -37,5 +38,6 @@ def create_app(test_config=None):
     jwt = JWTManager(app)
     mongo_client.init_app(app)
     app.register_blueprint(api_bp, url_prefix="/api")
+    CORS(app)
 
     return app

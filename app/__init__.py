@@ -38,6 +38,6 @@ def create_app(test_config=None):
     jwt = JWTManager(app)
     mongo_client.init_app(app)
     app.register_blueprint(api_bp, url_prefix="/api")
-    CORS(app)
+    CORS(app, supports_credentials=True)
 
     return app

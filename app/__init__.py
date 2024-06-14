@@ -18,9 +18,7 @@ def create_app(test_config=None):
         JWT_TOKEN_LOCATION="cookies",
         JWT_ACCESS_TOKEN_EXPIRES=timedelta(minutes=60),
         JWT_REFRESH_TOKEN_EXPIRES=timedelta(days=30),
-        JWT_COOKIE_CSRF_PROTECT=False,  # 根據需要設置 CSRF 保護
         JWT_COOKIE_SECURE=True,  # 在生產環境中設置為 True
-        JWT_ACCESS_COOKIE_PATH='/',
         JWT_COOKIE_SAMESITE='None',
 
         MONGO_URI='mongodb+srv://test:test@cluster0.iu7brvi.mongodb.net/?retryWrites=true&w=majority'

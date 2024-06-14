@@ -29,7 +29,8 @@ def check(fn):
         except ExpiredSignatureError as e:
             return jsonify({"msg": "access expired"}), 401
         except Exception as e:
-            return jsonify({"msg": "Internal server error"}), 500
+            print(e)
+            return jsonify({"msg": e}), 500
 
         return fn(*args, **kwargs)
 

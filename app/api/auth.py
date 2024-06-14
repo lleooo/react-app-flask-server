@@ -30,7 +30,7 @@ def check(fn):
             return jsonify({"msg": "access expired"}), 401
         except Exception as e:
             print(e)
-            return jsonify({"msg": e}), 500
+            return jsonify({"msg": "Internal server error"}), 500
 
         return fn(*args, **kwargs)
 
@@ -72,8 +72,8 @@ def login():
     access_token = create_access_token(identity=email)
     refresh_token = create_refresh_token(identity=email)
 
-    set_access_cookies(response, access_token, domain='.netlify.app/')
-    set_refresh_cookies(response, refresh_token, domain='.netlify.app/')
+    set_access_cookies(response, access_token, domain='.netlify.app')
+    set_refresh_cookies(response, refresh_token, domain='.netlify.app')
 
     return response, 200
 
@@ -116,7 +116,7 @@ def refresh():
 
     # Set the JWT access cookie in the response
     resp = jsonify({"refresh": True})
-    set_access_cookies(resp, access_token, domain='.netlify.app/')
+    set_access_cookies(resp, access_token, domain='.netlify.app')
     return resp, 200
 
 
@@ -164,8 +164,8 @@ def google_sign_in():
     access_token = create_access_token(identity=id_info['email'])
     refresh_token = create_refresh_token(identity=id_info['email'])
 
-    set_access_cookies(response_data, access_token, domain='.netlify.app/')
-    set_refresh_cookies(response_data, refresh_token, domain='.netlify.app/')
+    set_access_cookies(response_data, access_token, domain='.netlify.app')
+    set_refresh_cookies(response_data, refresh_token, domain='.netlify.app')
 
     return response_data, 200
 

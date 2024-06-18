@@ -20,7 +20,7 @@ def create_app(test_config=None):
         JWT_REFRESH_TOKEN_EXPIRES=timedelta(days=30),
         JWT_COOKIE_SECURE=True,  # 在生產環境中設置為 True
         JWT_COOKIE_SAMESITE='None',
-        JWT_COOKIE_DOMAIN='.netlify.app',
+        # JWT_COOKIE_DOMAIN='.netlify.app',
 
         MONGO_URI='mongodb+srv://test:test@cluster0.iu7brvi.mongodb.net/?retryWrites=true&w=majority'
         # DATABASE=os.path.join(app.instance_path, "flaskr.sqlite"),
@@ -42,6 +42,6 @@ def create_app(test_config=None):
     jwt = JWTManager(app)
     mongo_client.init_app(app)
     app.register_blueprint(api_bp, url_prefix="/api")
-    CORS(app, supports_credentials=True, origins=['https://movieeeeeeeeee.netlify.app'])
+    CORS(app, supports_credentials=True)
 
     return app

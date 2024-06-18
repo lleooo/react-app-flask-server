@@ -72,8 +72,8 @@ def login():
     access_token = create_access_token(identity=email)
     refresh_token = create_refresh_token(identity=email)
 
-    set_access_cookies(response, access_token)
-    set_refresh_cookies(response, refresh_token)
+    set_access_cookies(response, access_token, domain='.movieeeeeeeeee.netlify.app')
+    set_refresh_cookies(response, refresh_token, domain='.movieeeeeeeeee.netlify.app')
 
     return response, 200
 

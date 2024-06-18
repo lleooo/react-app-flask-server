@@ -20,7 +20,6 @@ def create_app(test_config=None):
         JWT_REFRESH_TOKEN_EXPIRES=timedelta(days=30),
         JWT_COOKIE_SECURE=True,  # 在生產環境中設置為 True
         JWT_COOKIE_SAMESITE='None',
-        JWT_COOKIE_DOMAIN='.netlify.app',
 
         MONGO_URI='mongodb+srv://test:test@cluster0.iu7brvi.mongodb.net/?retryWrites=true&w=majority'
         # DATABASE=os.path.join(app.instance_path, "flaskr.sqlite"),

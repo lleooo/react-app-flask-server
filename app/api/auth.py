@@ -1,19 +1,11 @@
-from functools import wraps
-
-from flask import request, jsonify, make_response
+from flask import request, jsonify
 from app.api import api_bp as api
 from app.database import mongo_client
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import create_refresh_token
-from flask_jwt_extended import unset_jwt_cookies
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import get_jwt_identity
-from flask_jwt_extended import set_access_cookies
-from flask_jwt_extended import set_refresh_cookies
-from flask_jwt_extended import verify_jwt_in_request
 from flask_jwt_extended import get_jwt_identity
-from jwt.exceptions import ExpiredSignatureError
-from jwt import decode
 
 from google.oauth2 import id_token
 from google.auth.transport import requests
@@ -21,24 +13,8 @@ from google.auth.transport import requests
 GOOGLE_AUTH_CLINT_ID = "54532982628-dmk3e53gfh1djcel7htm5pkiq3h85u9g.apps.googleusercontent.com"
 
 
-def check(fn):
-    @wraps(fn)
-    def decorator(*args, **kwargs):
-        try:
-            verify_jwt_in_request()
-        except ExpiredSignatureError as e:
-            return jsonify({"msg": "access expired"}), 401
-        except Exception as e:
-            print(e)
-            return jsonify({"msg": "Internal server error"}), 500
-
-        return fn(*args, **kwargs)
-
-    return decorator
-
-
 @api.route("/verify-token", methods=["GET"])
-@check
+@jwt_required()
 def verify():
     return jsonify({"msg": "Token is valid"}), 200
 
@@ -57,6 +33,9 @@ def login():
     if len(mydoc) == 0:
         return {"msg": "Wrong email or password"}, 401
 
+    access_token = create_access_token(identity=email)
+    refresh_token = create_refresh_token(identity=email)
+
     response = jsonify(
         {
             "msg": "successful",
@@ -65,15 +44,11 @@ def login():
                 "username": mydoc[0]["username"],
                 "email": mydoc[0]["email"],
                 "favorite": mydoc[0]["favorite"],
+                'access_token': access_token,
+                'refresh_token': refresh_token
             },
         }
     )
-
-    access_token = create_access_token(identity=email)
-    refresh_token = create_refresh_token(identity=email)
-
-    set_access_cookies(response, access_token, domain='.movieeeeeeeeee.netlify.app')
-    set_refresh_cookies(response, refresh_token, domain='.movieeeeeeeeee.netlify.app')
 
     return response, 200
 
@@ -100,24 +75,12 @@ def signup():
     return jsonify({"msg": "success"}), 201
 
 
-@api.route("/logout", methods=["POST"])
-def logout():
-    response = jsonify({"msg": "logout successful"})
-    unset_jwt_cookies(response)
-    return response
-
-
 @api.route("/refresh", methods=["POST"])
 @jwt_required(refresh=True)
 def refresh():
-    # Create the new access token
-    current_user = get_jwt_identity()
-    access_token = create_access_token(identity=current_user)
-
-    # Set the JWT access cookie in the response
-    resp = jsonify({"refresh": True})
-    set_access_cookies(resp, access_token, domain='.netlify.app')
-    return resp, 200
+    identity = get_jwt_identity()
+    access_token = create_access_token(identity=identity)
+    return jsonify({"refresh": True, 'access_token': access_token}), 200
 
 
 @api.route("/googleSignIn", methods=["POST"])
@@ -152,26 +115,25 @@ def google_sign_in():
     else:
         user_data = user
 
+    access_token = create_access_token(identity=id_info['email'])
+    refresh_token = create_refresh_token(identity=id_info['email'])
+
     response_data = jsonify({
         "msg": "successful",
         "data": {
             "username": user_data["username"],
             "email": user_data["email"],
             "favorite": user_data["favorite"]
-        }
+        },
+        'access_token': access_token,
+        'refresh_token': refresh_token,
     })
-
-    access_token = create_access_token(identity=id_info['email'])
-    refresh_token = create_refresh_token(identity=id_info['email'])
-
-    set_access_cookies(response_data, access_token, domain='.netlify.app')
-    set_refresh_cookies(response_data, refresh_token, domain='.netlify.app')
 
     return response_data, 200
 
 
 @ api.route("/addFavorite", methods=["POST"])
-@ check
+@ jwt_required()
 def get_favorite():
     col = mongo_client.client["db_create_by_leo"]["collection_create_by_leo"]
 
@@ -195,7 +157,7 @@ def get_favorite():
 
 
 @ api.route("/removeFavorite", methods=["DELETE"])
-@ check
+@ jwt_required()
 def rm_favorite():
     try:
         col = mongo_client.client["db_create_by_leo"]["collection_create_by_leo"]
@@ -216,3 +178,17 @@ def rm_favorite():
 
     except Exception as e:
         return jsonify({"msg": str(e)}), 500
+
+
+# @api.route("/test", methods=["POST"])
+# @jwt_required()
+# def test():
+#     return "hi"
+
+
+# @api.route("/test_ref", methods=["POST"])
+# @jwt_required(refresh=True)
+# def test_ref():
+#     identity = get_jwt_identity()
+#     access_token = create_access_token(identity=identity)
+#     return jsonify(access_token=access_token)

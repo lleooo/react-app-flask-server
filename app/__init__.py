@@ -15,8 +15,8 @@ def create_app(test_config=None):
     app.config.from_mapping(
         SECRET_KEY="dev",
         JWT_SECRET_KEY="dev",
-        JWT_TOKEN_LOCATION="cookies",
-        JWT_ACCESS_TOKEN_EXPIRES=timedelta(minutes=60),
+        JWT_TOKEN_LOCATION=["headers", "cookies"],
+        JWT_ACCESS_TOKEN_EXPIRES=timedelta(hours=1),
         JWT_REFRESH_TOKEN_EXPIRES=timedelta(days=30),
         JWT_COOKIE_SECURE=True,  # 在生產環境中設置為 True
         JWT_COOKIE_SAMESITE='None',

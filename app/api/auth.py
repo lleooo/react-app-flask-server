@@ -123,10 +123,10 @@ def google_sign_in():
         "data": {
             "username": user_data["username"],
             "email": user_data["email"],
-            "favorite": user_data["favorite"]
-        },
-        'access_token': access_token,
-        'refresh_token': refresh_token,
+            "favorite": user_data["favorite"],
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+        }
     })
 
     return response_data, 200
